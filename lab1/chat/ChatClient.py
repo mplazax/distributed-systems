@@ -1,49 +1,67 @@
 import socket
 import threading
 
+
+
 class ChatClient:
-    def __init__(self, host='127.0.0.1', port=12345):
+
+    def __init__(self, host='localhost', port=12212):
         self.host = host
         self.port = port
+
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
+
+
     def connect_to_server(self) -> bool:
-        """Nawiązuje połączenie z serwerem."""
         try:
             self.sock.connect((self.host, self.port))
             return True
+
         except Exception as e:
-            print(f"Błąd połączenia: {e}")
+            print(f"Error connecting to server: {e}")
             return False
 
+
+
     def receive_messages(self) -> None:
-        """Odbiera wiadomości z serwera i wyświetla je."""
+
         try:
             while True:
-                data = self.sock.recv(1024).decode('utf-8')
-                if not data:
+                msg = self.sock.recv(1024).decode('utf-8')
+
+                if not msg:
                     break
-                print(data)
+
+                print(msg)
+
         except Exception as e:
-            print(f"Błąd odbierania wiadomości: {e}")
+            print(f"Error receiving message: {e}")
+
         finally:
             self.sock.close()
+
+
 
     def send_messages(self) -> None:
-        """Wysyła wiadomości wpisane przez użytkownika do serwera"""
         try:
             while True:
-                message = input("")
-                if message.lower() == 'quit':
+                msg = input("")
+
+                if msg.lower() == 'quit':
                     break
-                self.sock.send(message.encode('utf-8'))
+
+                self.sock.send(msg.encode('utf-8'))
+
         except Exception as e:
-            print(f"Błąd wysyłania wiadomości: {e}")
+            print(f"Error sending message: {e}")
+
         finally:
             self.sock.close()
 
+
+
     def run(self) -> None:
-        """Uruchamia klienta – łączy się z serwerem i startuje wątki wysyłania oraz odbierania wiadomości."""
         if not self.connect_to_server():
             return
 
@@ -55,6 +73,9 @@ class ChatClient:
         thread_send.join()
         thread_receive.join()
 
+
+
 if __name__ == '__main__':
+
     client = ChatClient()
     client.run()
