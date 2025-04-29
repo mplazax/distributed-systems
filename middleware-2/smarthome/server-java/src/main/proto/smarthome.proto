@@ -1,0 +1,132 @@
+syntax = "proto3";
+
+package smarthome;
+
+import "google/protobuf/empty.proto"; 
+import "google/protobuf/wrappers.proto"; 
+
+option java_multiple_files = true;
+option java_package = "pl.agh.edu.sr.smarthome.generated"; 
+option java_outer_classname = "SmartHomeProto";
+
+// --- Enumy ---
+
+enum DeviceType {
+  UNKNOWN_DEVICE_TYPE = 0;
+  LIGHT = 1;
+  THERMOSTAT = 2;
+  PTZ_CAMERA = 3;
+}
+
+enum ThermostatSubtype {
+  UNKNOWN_SUBTYPE = 0;
+  SIMPLE = 1;     // Tylko temperatura
+  ADVANCED = 2;   // Temperatura i tryb
+}
+
+enum PowerState {
+  OFF = 0;
+  ON = 1;
+}
+
+enum ThermostatMode {
+  HEAT = 0;
+  COOL = 1;
+  FAN_ONLY = 2;
+  AUTO = 3;
+}
+
+// --- Info ---
+
+message DeviceIdentity {
+  string id = 1;
+}
+
+
+message DeviceInfo {
+  DeviceIdentity identity = 1;
+  DeviceType type = 2;
+  string name = 3;
+  optional ThermostatSubtype thermostat_subtype = 4;
+  string server_location = 5;
+}
+
+message LightState {
+  PowerState power_state = 1;
+  int32 brightness_percentage = 2; // 0-100
+}
+
+message ThermostatState {
+  PowerState power_state = 1;
+  float target_temperature_celsius = 2;
+  float current_temperature_celsius = 3;
+  optional ThermostatMode mode = 4;
+}
+
+message PTZCameraState {
+  PowerState power_state = 1;
+  int32 pan_degrees = 2;  // -180 to +180
+  int32 tilt_degrees = 3; // -90 to +90
+  int32 zoom_level = 4; // 1-10 (lub inny zakres)
+}
+
+// --- Żądania ---
+
+message SetPowerRequest {
+  DeviceIdentity identity = 1;
+  PowerState desired_power_state = 2;
+}
+
+message SetBrightnessRequest {
+  DeviceIdentity identity = 1;
+  int32 desired_brightness_percentage = 2; // Protobuf nie ma byte/short
+}
+
+message SetTemperatureRequest {
+  DeviceIdentity identity = 1;
+  float desired_target_temperature_celsius = 2;
+}
+
+message SetModeRequest {
+  DeviceIdentity identity = 1;
+  ThermostatMode desired_mode = 2;
+}
+
+message SetPTZRequest {
+  DeviceIdentity identity = 1;
+  google.protobuf.Int32Value desired_pan_degrees = 2;
+  google.protobuf.Int32Value desired_tilt_degrees = 3;
+  google.protobuf.Int32Value desired_zoom_level = 4;
+}
+
+// --- Odpowiedzi ---
+
+message ListDevicesResponse {
+  repeated DeviceInfo devices = 1; // Lista dostępnych urządzeń
+}
+
+// --- Services ---
+
+service DeviceDiscovery {
+  rpc ListDevices(google.protobuf.Empty) returns (ListDevicesResponse);
+}
+
+service LightControl {
+  rpc GetLightState(DeviceIdentity) returns (LightState);
+  rpc SetPower(SetPowerRequest) returns (google.protobuf.Empty);
+  rpc SetBrightness(SetBrightnessRequest) returns (google.protobuf.Empty);
+}
+
+service ThermostatControl {
+  rpc GetThermostatState(DeviceIdentity) returns (ThermostatState);
+  rpc SetPower(SetPowerRequest) returns (google.protobuf.Empty);
+  rpc SetTargetTemperature(SetTemperatureRequest) returns (google.protobuf.Empty);
+  // SetMode powinno być wywoływane tylko dla termostatów ADVANCED
+  rpc SetMode(SetModeRequest) returns (google.protobuf.Empty);
+}
+
+service CameraControl {
+  rpc GetPTZCameraState(DeviceIdentity) returns (PTZCameraState);
+  rpc SetPower(SetPowerRequest) returns (google.protobuf.Empty);
+  rpc SetPTZ(SetPTZRequest) returns (google.protobuf.Empty);
+}
